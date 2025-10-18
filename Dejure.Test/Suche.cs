@@ -13,13 +13,23 @@ public sealed class Suche
 	}
 
 	[TestMethod]
-	public async Task FindetGesetz()
+	public async Task FindetGesetz1()
 	{
 		var suchergebnis = await _dejureOrgClient.Suchen("Löschen");
 		var ersterTreffer = suchergebnis.Gesetze.First();
 		Assert.AreEqual("HGB", ersterTreffer.GesetzesKürzel);
 		Assert.AreEqual("486", ersterTreffer.ParagraphNummer);
 		Assert.AreEqual("Abladen. Verladen. Umladen. Löschen", ersterTreffer.Detail);
+	}
+
+	[TestMethod]
+	public async Task FindetGesetz2()
+	{
+		var suchergebnis = await _dejureOrgClient.Suchen("berufsgeheimnis");
+		var ersterTreffer = suchergebnis.Gesetze.Last();
+		Assert.AreEqual("DSA/GdD", ersterTreffer.GesetzesKürzel);
+		Assert.AreEqual("84", ersterTreffer.ParagraphNummer);
+		Assert.AreEqual("Berufsgeheimnis", ersterTreffer.Detail);
 	}
 
 	[TestMethod]

@@ -68,6 +68,7 @@ public class DejureTools(DejureOrgHttpClient dejureOrgHttpClient)
 		var suchergebnis = await dejureOrgHttpClient.Suchen(anfrage);
 		return new SuchenResponse(
 			Gesetze: [.. suchergebnis.Gesetze.Select(g => new SuchenResponse.Gesetz(g.GesetzesKürzel, g.ParagraphNummer, g.Detail))],
+			Gesetzgebungen: [.. suchergebnis.Gesetzgebungen.Select(g => new SuchenResponse.Gesetzgebung(g.Gesetz, g.Detail))],
 			Rechtsprechungen: [.. suchergebnis.Rechtsprechungen.Select(r => new SuchenResponse.Rechtsprechung(r.Urteil, r.Detail))]);
 	}
 
@@ -76,9 +77,10 @@ public class DejureTools(DejureOrgHttpClient dejureOrgHttpClient)
 	public record GetParagraphsResponse(string Intro, List<Paragraph> Paragraphs);
 	public record Paragraph(string Nummer, string Name);
 	public record ReadParagraphResponse(string Intro, string Text);
-	public record SuchenResponse(List<SuchenResponse.Gesetz> Gesetze, List<SuchenResponse.Rechtsprechung> Rechtsprechungen)
+	public record SuchenResponse(List<SuchenResponse.Gesetz> Gesetze, List<SuchenResponse.Gesetzgebung> Gesetzgebungen, List<SuchenResponse.Rechtsprechung> Rechtsprechungen)
 	{
 		public record Gesetz(string GesetzesKürzel, string ParagraphNummer, string Detail);
+		public record Gesetzgebung(string Gesetz, string Detail);
 		public record Rechtsprechung(string Urteil, string Detail);
 	}
 }

@@ -74,7 +74,11 @@ namespace Dejure
 
 			public string Url => "https://dejure.org" + node.SelectSingleNode(".//a")?.GetAttributeValue("href", string.Empty);
 
-			public string Kürzel => node.SelectSingleNode(".//a")?.GetAttributeValue("href", string.Empty).Replace("/gesetze/", "").Trim() ?? string.Empty;
+			public string Kürzel => node.SelectSingleNode(".//a")?
+				.GetAttributeValue("href", string.Empty)
+				.Replace("/gesetze/", "")
+				.Trim()
+				?? string.Empty;
 
 			public string Bezeichnung => string.Join("", node.ChildNodes
 				.Where(n => n.NodeType == HtmlNodeType.Text)
@@ -121,7 +125,11 @@ namespace Dejure
 						this.Inhaltsverzeichnnis = inhaltsverzeichnnis;
 					}
 
-					public string Nummer => this.node.SelectSingleNode(".//a")?.InnerText.Trim() ?? string.Empty;
+					public string Nummer => this.node.SelectSingleNode(".//a")?
+						.GetAttributeValue("href", string.Empty)
+						.Replace($"/gesetze/{Inhaltsverzeichnnis.Gesetz.Kürzel}/", "")
+						.Replace(".html", "").Trim()
+						?? string.Empty;
 
 					public string Name => this.node.InnerText.Trim();
 
@@ -181,7 +189,7 @@ namespace Dejure
 						gesetz: default(Suchergebnis.Gesetz),
 						gesetzgebung: default(Suchergebnis.Gesetzgebung),
 						rechtsprechung: default(Suchergebnis.Rechtsprechung)),
-					_ when parts.Length == 3 && parts[0].StartsWith("##") && int.TryParse(parts[0].Substring(2), out var parsedInt) => (
+					_ when parts.Length >= 3 && parts[0].StartsWith("##") && int.TryParse(parts[0].Substring(2), out var parsedInt) => (
 						gesetz: default,
 						gesetzgebung: new Suchergebnis.Gesetzgebung
 						{
@@ -190,7 +198,7 @@ namespace Dejure
 							Detail = parts[2].Decode(),
 						},
 						rechtsprechung: default),
-					_ when parts.Length == 3 && parts[0].StartsWith("#!") && int.TryParse(parts[0].Substring(2), out var parsedInt) => (
+					_ when parts.Length >= 3 && parts[0].StartsWith("#!") && int.TryParse(parts[0].Substring(2), out var parsedInt) => (
 						gesetz: default,
 						gesetzgebung: default,
 						rechtsprechung: new Suchergebnis.Rechtsprechung
@@ -199,7 +207,16 @@ namespace Dejure
 							Urteil = parts[1].Decode(),
 							Detail = parts[2].Decode(),
 						}),
-					_ when parts.Length == 3 && parts[0].StartsWith("#") && int.TryParse(parts[0].Substring(1), out var parsedInt) => (
+					_ when parts.Length >= 3 && parts[0].StartsWith("#~") => (
+						gesetz: new Suchergebnis.Gesetz
+						{
+							GesetzesKürzel = parts[0].Substring(2).Decode(),
+							ParagraphNummer = parts[1].Decode(),
+							Detail = parts[2].Decode(),
+						},
+						gesetzgebung: default,
+						rechtsprechung: default),
+					_ when parts.Length >= 3 && parts[0].StartsWith("#") && int.TryParse(parts[0].Substring(1), out var parsedInt) => (
 						gesetz: default,
 						gesetzgebung: default,
 						rechtsprechung: new Suchergebnis.Rechtsprechung
@@ -208,7 +225,7 @@ namespace Dejure
 							Urteil = parts[1].Decode(),
 							Detail = parts[2].Decode(),
 						}),
-					_ when parts.Length == 3 && parts[0].StartsWith("#") => (
+					_ when parts.Length >= 3 && parts[0].StartsWith("#") => (
 						gesetz: new Suchergebnis.Gesetz
 						{
 							GesetzesKürzel = parts[0].Substring(1).Decode(),

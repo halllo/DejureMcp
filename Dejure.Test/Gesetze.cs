@@ -43,6 +43,15 @@ public sealed class Gesetze
 	}
 
 	[TestMethod]
+	public async Task DsgvoErwägungsgründe()
+	{
+		var dsgvo = await _gesetze.Single(g => g.Kürzel == "DSGVO").LoadInhaltsverzeichnis();
+		var erwägungsgründe = dsgvo.Paragraphen.Single(p => p.Nummer.StartsWith("Erw"));
+		var erwägungsgründeText = await erwägungsgründe.LoadText();
+		Assert.IsTrue(erwägungsgründeText.Content.StartsWith("DAS EUROPÄISCHE PARLAMENT UND DER RAT DER EUROPÄISCHEN UNION"));
+	}
+
+	[TestMethod]
 	public async Task BRAO43eTextStartsAndEndsWithCertainText()
 	{
 		var brao = await _gesetze.Single(g => g.Kürzel == "BRAO").LoadInhaltsverzeichnis();
