@@ -32,5 +32,12 @@ namespace Dejure
 			htmlDoc.LoadHtml(content);
 			return new DejureOrg.Gesetz.Inhaltsverzeichnnis.Paragraph.Text(gesetzesKürzel, paragraphNummer, htmlDoc);
 		}
+
+		public async Task<DejureOrg.Suchergebnis> Suchen(string anfrage)
+		{
+			using var response = await _httpClient.GetAsync($"https://dejure.org/cgi-bin/jquery-suche01.fcgi?term={anfrage.Encode()}&korrektur=1");
+			var content = await response.Content.ReadAsStringAsync();
+			return DejureOrg.ParseSuchergebnis(content);
+		}
 	}
 }

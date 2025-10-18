@@ -1,7 +1,9 @@
 ﻿using HtmlAgilityPack;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Dejure
@@ -163,6 +165,120 @@ namespace Dejure
 						public string Content => this.html.DocumentNode.SelectSingleNode("//div[@id='gesetzestext']")?.InnerText.Trim() ?? string.Empty;
 					}
 				}
+			}
+		}
+
+		private static JsonSerializerOptions suchJsonParsingOptions = new() { PropertyNameCaseInsensitive = true };
+		public static Suchergebnis ParseSuchergebnis(string suchergebnis)
+		{
+			var suchergebnisRaw = JsonSerializer.Deserialize<SuchergebnisRaw>(suchergebnis, suchJsonParsingOptions);
+			var (gesetze, gesetzgebungen, rechtsprechungen) = suchergebnisRaw!.Treffer
+				.Select(t => Uri.UnescapeDataString(t.Value))
+				.Select(t => t.Split([':'], StringSplitOptions.RemoveEmptyEntries))
+				.Select(parts => parts.FirstOrDefault() switch
+				{
+					null => (
+						gesetz: default(Suchergebnis.Gesetz),
+						gesetzgebung: default(Suchergebnis.Gesetzgebung),
+						rechtsprechung: default(Suchergebnis.Rechtsprechung)),
+					_ when parts.Length == 3 && parts[0].StartsWith("##") && int.TryParse(parts[0].Substring(2), out var parsedInt) => (
+						gesetz: default,
+						gesetzgebung: new Suchergebnis.Gesetzgebung
+						{
+							Number = parsedInt,
+							Gesetz = parts[1].Decode().NoSpans(),
+							Detail = parts[2].Decode(),
+						},
+						rechtsprechung: default),
+					_ when parts.Length == 3 && parts[0].StartsWith("#!") && int.TryParse(parts[0].Substring(2), out var parsedInt) => (
+						gesetz: default,
+						gesetzgebung: default,
+						rechtsprechung: new Suchergebnis.Rechtsprechung
+						{
+							Number = parsedInt,
+							Urteil = parts[1].Decode(),
+							Detail = parts[2].Decode(),
+						}),
+					_ when parts.Length == 3 && parts[0].StartsWith("#") && int.TryParse(parts[0].Substring(1), out var parsedInt) => (
+						gesetz: default,
+						gesetzgebung: default,
+						rechtsprechung: new Suchergebnis.Rechtsprechung
+						{
+							Number = parsedInt,
+							Urteil = parts[1].Decode(),
+							Detail = parts[2].Decode(),
+						}),
+					_ when parts.Length == 3 && parts[0].StartsWith("#") => (
+						gesetz: new Suchergebnis.Gesetz
+						{
+							GesetzesKürzel = parts[0].Substring(1).Decode(),
+							ParagraphNummer = parts[1].Decode(),
+							Detail = parts[2].Decode(),
+						},
+						gesetzgebung: default,
+						rechtsprechung: default),
+					_ => (
+						gesetz: default,
+						gesetzgebung: default,
+						rechtsprechung: default)
+				})
+				.Aggregate((gesetze: new List<Suchergebnis.Gesetz>(), gesetzgebungen: new List<Suchergebnis.Gesetzgebung>(), rechtsprechungen: new List<Suchergebnis.Rechtsprechung>()), (accu, current) =>
+				{
+					if (current.gesetz != null) accu.gesetze.Add(current.gesetz);
+					if (current.gesetzgebung != null) accu.gesetzgebungen.Add(current.gesetzgebung);
+					if (current.rechtsprechung != null) accu.rechtsprechungen.Add(current.rechtsprechung);
+					return accu;
+				});
+
+			return new Suchergebnis
+			{
+				Gesetze = gesetze,
+				Gesetzgebungen = gesetzgebungen,
+				Rechtsprechungen = rechtsprechungen
+			};
+		}
+
+		private class SuchergebnisRaw
+		{
+			public Suchtreffer[] Treffer { get; set; } = null!;
+			public class Suchtreffer
+			{
+				public string Value { get; set; } = null!;
+			}
+		}
+
+		public class Suchergebnis
+		{
+			internal Suchergebnis() { }
+
+			public IReadOnlyList<Gesetz> Gesetze { get; set; } = null!;
+			public class Gesetz
+			{
+				internal Gesetz() { }
+
+				public string GesetzesKürzel { get; set; } = null!;
+				public string ParagraphNummer { get; set; } = null!;
+				public string Detail { get; set; } = null!;
+			}
+
+			public IReadOnlyList<Gesetzgebung> Gesetzgebungen { get; set; } = null!;
+			public class Gesetzgebung
+			{
+				internal Gesetzgebung() { }
+
+				public int Number { get; set; }
+				public string Gesetz { get; set; } = null!;
+				public string Detail { get; set; } = null!;
+			}
+
+			public IReadOnlyList<Rechtsprechung> Rechtsprechungen { get; set; } = null!;
+			public class Rechtsprechung
+			{
+				internal Rechtsprechung() { }
+
+				public int Number { get; set; }
+				public string Urteil { get; set; } = null!;
+				public string Detail { get; set; } = null!;
 			}
 		}
 	}

@@ -18,8 +18,8 @@ await builder.Build().RunAsync();
 [McpServerToolType]
 public class DejureTools(DejureOrgHttpClient dejureOrgHttpClient)
 {
-	[McpServerTool(Title = "Rechtsgebiete auflisten", Destructive = false, Idempotent = true, OpenWorld = false, ReadOnly = true)]
-	[Description("Get all fields of law (Rechtsgebiete)")]
+	[McpServerTool(Name = "dejure_rechtsgebiete_auflisten", Title = "Rechtsgebiete auflisten", Destructive = false, Idempotent = true, OpenWorld = false, ReadOnly = true)]
+	[Description("Listet alle Rechtsgebiete und deren Gesetze auf.")]
 	public async Task<List<Rechtsgebiet>> GetRechtsgebiete()
 	{
 		var dejurOrg = await dejureOrgHttpClient.Load();
@@ -29,8 +29,8 @@ public class DejureTools(DejureOrgHttpClient dejureOrgHttpClient)
 		return rechtsgebiete;
 	}
 
-	[McpServerTool(Title = "Gesetze auflisten", Destructive = false, Idempotent = true, OpenWorld = false, ReadOnly = true)]
-	[Description("Get all legislation (Gesetze)")]
+	[McpServerTool(Name = "dejure_gesetze_auflisten", Title = "Gesetze auflisten", Destructive = false, Idempotent = true, OpenWorld = false, ReadOnly = true)]
+	[Description("Listet alle Gesetze auf.")]
 	public async Task<List<Gesetz>> GetGesetze()
 	{
 		var dejurOrg = await dejureOrgHttpClient.Load();
@@ -40,8 +40,8 @@ public class DejureTools(DejureOrgHttpClient dejureOrgHttpClient)
 		return gesetze;
 	}
 
-	[McpServerTool(Title = "Paragraphen auflisten", Destructive = false, Idempotent = true, OpenWorld = false, ReadOnly = true)]
-	[Description("Get all paragraphs of a legislation")]
+	[McpServerTool(Name = "dejure_paragraphen_auflisten", Title = "Paragraphen auflisten", Destructive = false, Idempotent = true, OpenWorld = false, ReadOnly = true)]
+	[Description("Listet alle Paragraphen eines Gesetzes auf.")]
 	public async Task<GetParagraphsResponse> GetParagraphs(string gesetzesKürzel)
 	{
 		var dejurOrg = await dejureOrgHttpClient.Load();
@@ -53,12 +53,22 @@ public class DejureTools(DejureOrgHttpClient dejureOrgHttpClient)
 		return new GetParagraphsResponse(inhaltsverzeichnnis.Intro, paragraphs);
 	}
 
-	[McpServerTool(Title = "Paragraph lesen", Destructive = false, Idempotent = true, OpenWorld = false, ReadOnly = true)]
-	[Description("Read paragraphs of a legislation")]
+	[McpServerTool(Name = "dejure_paragraph_lesen", Title = "Paragraph lesen", Destructive = false, Idempotent = true, OpenWorld = false, ReadOnly = true)]
+	[Description("Lädt einen Paragraphen eines Gesetzes.")]
 	public async Task<ReadParagraphResponse> ReadParagraph(string gesetzesKürzel, string paragraphNummer)
 	{
 		var paragraphText = await dejureOrgHttpClient.LoadPragraphText(gesetzesKürzel, paragraphNummer.Trim([' ', '§']));
 		return new ReadParagraphResponse(paragraphText.Intro, paragraphText.Content);
+	}
+
+	[McpServerTool(Name = "dejure_suchen", Title = "Gesetze suchen", Destructive = false, Idempotent = true, OpenWorld = false, ReadOnly = true)]
+	[Description("Sucht nach Gesetzen und Rechtsprechungen.")]
+	public async Task<SuchenResponse> Suchen(string anfrage)
+	{
+		var suchergebnis = await dejureOrgHttpClient.Suchen(anfrage);
+		return new SuchenResponse(
+			Gesetze: [.. suchergebnis.Gesetze.Select(g => new SuchenResponse.Gesetz(g.GesetzesKürzel, g.ParagraphNummer, g.Detail))],
+			Rechtsprechungen: [.. suchergebnis.Rechtsprechungen.Select(r => new SuchenResponse.Rechtsprechung(r.Urteil, r.Detail))]);
 	}
 
 	public record Rechtsgebiet(string Name, List<Gesetz> Gesetze);
@@ -66,4 +76,9 @@ public class DejureTools(DejureOrgHttpClient dejureOrgHttpClient)
 	public record GetParagraphsResponse(string Intro, List<Paragraph> Paragraphs);
 	public record Paragraph(string Nummer, string Name);
 	public record ReadParagraphResponse(string Intro, string Text);
+	public record SuchenResponse(List<SuchenResponse.Gesetz> Gesetze, List<SuchenResponse.Rechtsprechung> Rechtsprechungen)
+	{
+		public record Gesetz(string GesetzesKürzel, string ParagraphNummer, string Detail);
+		public record Rechtsprechung(string Urteil, string Detail);
+	}
 }
