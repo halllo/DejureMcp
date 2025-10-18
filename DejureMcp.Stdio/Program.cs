@@ -54,7 +54,7 @@ public class DejureTools(DejureOrgHttpClient dejureOrgHttpClient)
 	}
 
 	[McpServerTool(Name = "dejure_paragraph_lesen", Title = "Paragraph lesen", Destructive = false, Idempotent = true, OpenWorld = false, ReadOnly = true)]
-	[Description("Lädt einen Paragraphen eines Gesetzes.")]
+	[Description("Liest einen Paragraphen eines Gesetzes.")]
 	public async Task<ReadParagraphResponse> ReadParagraph(string gesetzesKürzel, string paragraphNummer)
 	{
 		var paragraphText = await dejureOrgHttpClient.LoadPragraphText(gesetzesKürzel, paragraphNummer.Trim([' ', '§']));
