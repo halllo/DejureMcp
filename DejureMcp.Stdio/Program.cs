@@ -42,10 +42,10 @@ public class DejureTools(DejureOrgHttpClient dejureOrgHttpClient)
 
 	[McpServerTool(Name = "dejure_paragraphen_auflisten", Title = "Paragraphen auflisten", Destructive = false, Idempotent = true, OpenWorld = false, ReadOnly = true)]
 	[Description("Listet alle Paragraphen eines Gesetzes auf.")]
-	public async Task<GetParagraphsResponse> GetParagraphs(string gesetzesKürzel)
+	public async Task<GetParagraphsResponse> GetParagraphs(string gesetzesKuerzel)
 	{
 		var dejurOrg = await dejureOrgHttpClient.Load();
-		var gesetz = dejurOrg.Gesetze.Single(g => string.Equals(g.Kürzel, gesetzesKürzel, StringComparison.InvariantCultureIgnoreCase));
+		var gesetz = dejurOrg.Gesetze.Single(g => string.Equals(g.Kürzel, gesetzesKuerzel, StringComparison.InvariantCultureIgnoreCase));
 		var inhaltsverzeichnnis = await gesetz.LoadInhaltsverzeichnis();
 		var paragraphs = inhaltsverzeichnnis.Paragraphen
 			.Select(p => new Paragraph(p.Nummer, p.Name))
@@ -55,9 +55,9 @@ public class DejureTools(DejureOrgHttpClient dejureOrgHttpClient)
 
 	[McpServerTool(Name = "dejure_paragraph_lesen", Title = "Paragraph lesen", Destructive = false, Idempotent = true, OpenWorld = false, ReadOnly = true)]
 	[Description("Liest einen Paragraphen eines Gesetzes.")]
-	public async Task<ReadParagraphResponse> ReadParagraph(string gesetzesKürzel, string paragraphNummer)
+	public async Task<ReadParagraphResponse> ReadParagraph(string gesetzesKuerzel, string paragraphNummer)
 	{
-		var paragraphText = await dejureOrgHttpClient.LoadPragraphText(gesetzesKürzel, paragraphNummer.Trim([' ', '§']));
+		var paragraphText = await dejureOrgHttpClient.LoadPragraphText(gesetzesKuerzel, paragraphNummer.Trim([' ', '§']));
 		return new ReadParagraphResponse(paragraphText.Intro, paragraphText.Content);
 	}
 
@@ -73,13 +73,13 @@ public class DejureTools(DejureOrgHttpClient dejureOrgHttpClient)
 	}
 
 	public record Rechtsgebiet(string Name, List<Gesetz> Gesetze);
-	public record Gesetz(string Kürzel, string Name);
+	public record Gesetz(string Kuerzel, string Name);
 	public record GetParagraphsResponse(string Intro, List<Paragraph> Paragraphs);
 	public record Paragraph(string Nummer, string Name);
 	public record ReadParagraphResponse(string Intro, string Text);
 	public record SuchenResponse(List<SuchenResponse.Gesetz> Gesetze, List<SuchenResponse.Gesetzgebung> Gesetzgebungen, List<SuchenResponse.Rechtsprechung> Rechtsprechungen)
 	{
-		public record Gesetz(string GesetzesKürzel, string ParagraphNummer, string Detail);
+		public record Gesetz(string GesetzesKuerzel, string ParagraphNummer, string Detail);
 		public record Gesetzgebung(string Gesetz, string Detail);
 		public record Rechtsprechung(string Urteil, string Detail);
 	}
