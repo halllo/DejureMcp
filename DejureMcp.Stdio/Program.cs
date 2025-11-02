@@ -1,6 +1,7 @@
 ﻿using Dejure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using ModelContextProtocol;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 using System.ComponentModel;
@@ -16,7 +17,48 @@ builder.Services.AddHttpClient<DejureOrgHttpClient>(httpClient =>
 builder.Services.AddMcpServer()
 	.WithStdioServerTransport()
 	.WithToolsFromAssembly()
-	.WithResourcesFromAssembly();
+	.WithResourcesFromAssembly()
+	.WithListResourcesHandler(async (request, _) =>
+	{
+		var dejureOrgHttpClient = request.Services!.GetRequiredService<DejureOrgHttpClient>();
+		var dejurOrg = await dejureOrgHttpClient.Load();
+		return new ListResourcesResult
+		{
+			Resources = [.. dejurOrg.Rechtsgebiete.Select(r => new Resource
+			{
+				Uri = $"dejure://rechtsgebiete/{Uri.EscapeDataString(r.Name)}",
+				Name = r.Name,
+				MimeType = "application/json",
+			})],
+		};
+	})
+	.WithReadResourceHandler(async (request, ct) =>
+	{
+		var dejureOrgHttpClient = request.Services!.GetRequiredService<DejureOrgHttpClient>();
+		var dejurOrg = await dejureOrgHttpClient.Load();
+		var rechtsgebiet = dejurOrg.Rechtsgebiete.FirstOrDefault(r => string.Equals($"dejure://rechtsgebiete/{Uri.EscapeDataString(r.Name)}", request.Params!.Uri, StringComparison.InvariantCultureIgnoreCase));
+		if (rechtsgebiet != null)
+		{
+			return new ReadResourceResult
+			{
+				Contents = [new TextResourceContents
+				{
+					Text = JsonSerializer.Serialize(new
+					{
+						Rechtsgebiet = rechtsgebiet?.Name,
+						Gesetze = rechtsgebiet?.Gesetze.Select(g => new DejureResources.GesetzDto(g.Kürzel, g.Name)).ToList(),
+					}),
+					MimeType = "application/json",
+					Uri = request.Params!.Uri
+				}]
+			};
+		}
+		else
+		{
+			throw new McpException($"Resource not found: {request.Params?.Uri}");
+		}
+	})
+	;
 
 await builder.Build().RunAsync();
 
@@ -93,39 +135,6 @@ public class DejureTools(DejureOrgHttpClient dejureOrgHttpClient)
 [McpServerResourceType]
 public class DejureResources(DejureOrgHttpClient dejureOrgHttpClient)
 {
-	[McpServerResource(UriTemplate = "dejure://rechtsgebiete", Name = "Rechtsgebiete", MimeType = "application/json")]
-	[Description("Rechtsgebiete")]
-	public async Task<string> RechtsgebieteResource()
-	{
-		var dejurOrg = await dejureOrgHttpClient.Load();
-		return JsonSerializer.Serialize(dejurOrg.Rechtsgebiete.Select(r => r.Name));
-	}
-
-	[McpServerResource(UriTemplate = "dejure://rechtsgebiete/{rechtsgebiet}", Name = "Rechtsgebiete", MimeType = "application/json")]
-	[Description("Rechtsgebiete")]
-	public async Task<TextResourceContents> RechtsgebieteResource(RequestContext<ReadResourceRequestParams> requestContext, string rechtsgebiet)
-	{
-		var dejurOrg = await dejureOrgHttpClient.Load();
-		var dto = dejurOrg.Rechtsgebiete.FirstOrDefault(r => string.Equals(r.Name, rechtsgebiet, StringComparison.InvariantCultureIgnoreCase));
-		if (dto != null)
-		{
-			return new TextResourceContents
-			{
-				Text = JsonSerializer.Serialize(new
-				{
-					Rechtsgebiet = dto.Name,
-					Gesetze = dto.Gesetze.Select(g => new GesetzDto(g.Kürzel, g.Name)).ToList(),
-				}),
-				MimeType = "application/json",
-				Uri = requestContext.Params!.Uri
-			};
-		}
-		else
-		{
-			throw new NotSupportedException($"Unknown resource: {requestContext.Params?.Uri}");
-		}
-	}
-
 	[McpServerResource(UriTemplate = "dejure://gesetze", Name = "Gesetze", MimeType = "application/json")]
 	[Description("Rechtsgebiete")]
 	public async Task<string> GesetzeResource()
@@ -156,7 +165,7 @@ public class DejureResources(DejureOrgHttpClient dejureOrgHttpClient)
 		}
 		else
 		{
-			throw new NotSupportedException($"Unknown resource: {requestContext.Params?.Uri}");
+			throw new McpException($"Resource not found: {requestContext.Params?.Uri}");
 		}
 	}
 
