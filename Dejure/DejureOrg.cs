@@ -168,7 +168,13 @@ namespace Dejure
 							this.html = html;
 						}
 
-						public string Intro => this.html.DocumentNode.SelectSingleNode("//div[@id='headgesetz']")?.InnerText.Trim() ?? string.Empty;
+						public string Intro => string.Join("", this.html.DocumentNode.SelectSingleNode("//div[@id='headgesetz']")?.ChildNodes
+							.Where(c => !c.HasClass("hideprint"))
+							.Select(c => c.InnerText.Trim()) ?? [])
+							.Replace("&nbsp;", " ")
+							.Trim();
+
+						public string Heading => this.html.DocumentNode.SelectSingleNode("//h1[@id='normueberschrift']")?.InnerHtml.Replace("<br>", " ").Trim() ?? string.Empty;
 
 						public string Content => this.html.DocumentNode.SelectSingleNode("//div[@id='gesetzestext']")?.InnerText.Trim() ?? string.Empty;
 					}

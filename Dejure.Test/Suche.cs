@@ -46,7 +46,7 @@ public sealed class Suche
 	{
 		var suchergebnis = await _dejureOrgClient.Suchen("Löschen");
 		var letzterTreffer = suchergebnis.Rechtsprechungen.Last();
-		Assert.AreEqual("OLG Frankfurt, 06.09.2018 - 16 U 193/17", letzterTreffer.Urteil);
-		Assert.AreEqual("Google muss auch nach der DSGVO nicht jeden \"alten\" Artikel löschen", letzterTreffer.Detail);
+		Assert.AreEqual("BGH, 06.03.2013 - 1 StR 578/12", letzterTreffer.Urteil);
+		Assert.AreEqual("Brandstiftung (Vorsatz; Versuch -dpp-  unmittelbares Ansetzen); schwere Brandstiftung (Begriff der Zerstörung; zur Wohnung von Menschen dienendes Gebäude -dpp-  gemischt genutzte Gebäude, Kellerräume; Gefahr der Gesundheitsschädigung); besonders schwere Brandstiftung (Erschweren des Löschens)", letzterTreffer.Detail);
 	}
 }
