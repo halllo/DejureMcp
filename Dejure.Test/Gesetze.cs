@@ -77,4 +77,13 @@ public sealed class Gesetze
 		Assert.AreEqual("§ 34 Ausschluss vom Stimmrecht", bgb34Text.Heading);
 		Assert.StartsWith("Ein Mitglied ist nicht stimmberechtigt, wenn die Beschlussfassung die Vornahme eines Rechtsgeschäfts mit ihm oder die Einleitung oder Erledigung eines Rechtsstreits zwischen ihm und dem Verein betrifft.", bgb34Text.Content);
 	}
+
+	[TestMethod]
+	public async Task DirectBGBInvalidParagraphText()
+	{
+		var bgbInvalidParagraph = await _dejureOrgClient.LoadPragraphText("bgb", "abc");
+		Assert.IsEmpty(bgbInvalidParagraph.Intro);
+		Assert.IsEmpty(bgbInvalidParagraph.Heading);
+		Assert.IsEmpty(bgbInvalidParagraph.Content);
+	}
 }

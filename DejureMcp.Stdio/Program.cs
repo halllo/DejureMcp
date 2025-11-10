@@ -143,8 +143,8 @@ public class DejureResources(DejureOrgHttpClient dejureOrgHttpClient)
 		return JsonSerializer.Serialize(dejurOrg.Gesetze.Select(g => new GesetzDto(g.Kürzel, g.Name)));
 	}
 
-	[McpServerResource(UriTemplate = "dejure://gesetze/{gesetzesKuerzel}", Name = "Gesetze", MimeType = "application/json")]
-	[Description("Gesetze")]
+	[McpServerResource(UriTemplate = "dejure://gesetze/{gesetzesKuerzel}", Name = "Gesetz", MimeType = "application/json")]
+	[Description("Gesetz")]
 	public async Task<TextResourceContents> GesetzeResource(RequestContext<ReadResourceRequestParams> requestContext, string gesetzesKuerzel)
 	{
 		var dejurOrg = await dejureOrgHttpClient.Load();
@@ -169,17 +169,17 @@ public class DejureResources(DejureOrgHttpClient dejureOrgHttpClient)
 		}
 	}
 
-	[McpServerResource(UriTemplate = "dejure://gesetze/{gesetzesKuerzel}/paragraphen/{paragraphNummer}", Name = "Paragraphen", MimeType = "application/json")]
-	[Description("Paragraphen")]
+	[McpServerResource(UriTemplate = "dejure://gesetze/{gesetzesKuerzel}/paragraphen/{paragraphNummer}", Name = "Paragraph", MimeType = "text/plain")]
+	[Description("Paragraph")]
 	public async Task<TextResourceContents> ParagraphenResource(RequestContext<ReadResourceRequestParams> requestContext, string gesetzesKuerzel, string paragraphNummer)
 	{
 		var paragraphText = await dejureOrgHttpClient.LoadPragraphText(gesetzesKuerzel, paragraphNummer.Trim([' ', '§']));
-		if (paragraphText != null)
+		if (paragraphText != null && !string.IsNullOrWhiteSpace(paragraphText.Content))
 		{
 			return new TextResourceContents
 			{
-				Text = JsonSerializer.Serialize($"{paragraphText.Intro}\n\n{paragraphText.Heading}\n\n\n{paragraphText.Content}"),
-				MimeType = "application/json",
+				Text = $"{paragraphText.Intro}\n{paragraphText.Heading}\n\n{paragraphText.Content}".Trim(),
+				MimeType = "text/plain",
 				Uri = requestContext.Params!.Uri
 			};
 		}
