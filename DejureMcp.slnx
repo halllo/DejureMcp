@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+  </Folder>
+  <Project Path="Dejure.Test/Dejure.Test.csproj" />
+  <Project Path="Dejure/Dejure.csproj" />
+  <Project Path="DejureMcp.Stdio/DejureMcp.Stdio.csproj" />
+</Solution>
